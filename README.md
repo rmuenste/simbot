@@ -29,3 +29,9 @@ deactivate
 ```
 This will return you to your global Python environment.
 
+7. Start the App
+```
+python3 ./sim_bot.py
+```
+The start command starts a chat interface that can be open in the browser using the url http://127.0.0.1:7860/ or similar. A dark theme can be
+used by navigating to http://127.0.0.1:7860/?__theme=dark
