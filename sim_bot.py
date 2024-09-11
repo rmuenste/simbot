@@ -8,9 +8,27 @@ load_dotenv()
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.chat_history import BaseChatMessageHistory, InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+store = {}
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory()
+    return store[session_id]
 
 current_date = datetime.datetime.now()
 date_string_short = current_date.strftime("%m/%d/%y") 
+
+SYSTEM_STRING1 = """
+You are a master of smalltalk, it is a delight for everyone to chat with you.
+"""
+
+SYSTEM_STRING2 = """
+You are a translator to German, you translate all input given to you to the German language.
+"""
 
 EXPLANATION_STRING = """
 [SigmaFileInfo]
@@ -106,17 +124,39 @@ Answer the question based only on the following context:
 Answer the question based on the above context: {question}
 """
 
+prompt = ChatPromptTemplate.from_messages([
+    (  "system",
+       SYSTEM_STRING2
+    ),
+    MessagesPlaceholder(variable_name="messages"),
+])
+
+model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5)
+
+chain = prompt | model
+
+model_wh = RunnableWithMessageHistory(model, get_session_history)
+
+chain_wh = RunnableWithMessageHistory(chain, get_session_history)
+
+config = {"configurable": {"session_id": "abc2"}}
+
 def process_query(query, history):
+    print(f"This is history: {history}")
     #model = ChatOpenAI(model="gpt-4")
-    model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5)
-    
     messages = [
-            SystemMessage(content=BEHAVIOR_STRING),
+            SystemMessage(content=SYSTEM_STRING1),
             HumanMessage(content=query),
     ]
     
-    response = model.invoke(messages)
-    print(response)
+    #response = model_wh.invoke(messages, config=config)
+    response = chain_wh.invoke({"messages": HumanMessage(content=query)}, config=config)
+
+    sessionHistory = get_session_history('abc2')
+    #print(f"This is session history: {}")
+    #print(f"session history: {sessionHistory.messages}")
+    # sessionHistory is a list of messages, where the AIMessage is a more
+    # complicated entry than the HumanMessage or the SystemMessage
     return response.content
 
 with gr.Blocks() as iface:
