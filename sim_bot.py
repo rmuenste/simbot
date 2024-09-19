@@ -3,8 +3,10 @@ import os
 import datetime
 import gradio as gr
 from dotenv import load_dotenv
+from count_tokens import count_tokens, count_tokens_in_string
 
 load_dotenv()
+print(os.getenv("OPENAI_API_KEY"))
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -16,15 +18,16 @@ from limited_cmh import LimitedChatMessageHistory
 store = {}
 
 # Update the get_session_history function
-def get_session_history2(session_id: str) -> BaseChatMessageHistory:
-    if session_id not in store:
-        store[session_id] = LimitedChatMessageHistory(max_messages=5)
-    return store[session_id]
-
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
     if session_id not in store:
-        store[session_id] = InMemoryChatMessageHistory()
+        # max_messages 3 will keep the last 2 AIMessages
+        store[session_id] = LimitedChatMessageHistory(max_messages=2)
     return store[session_id]
+
+#def get_session_history(session_id: str) -> BaseChatMessageHistory:
+#    if session_id not in store:
+#        store[session_id] = InMemoryChatMessageHistory()
+#    return store[session_id]
 
 current_date = datetime.datetime.now()
 date_string_short = current_date.strftime("%m/%d/%y") 
@@ -148,7 +151,8 @@ KTPRelease=NO <Flag indicating whether KTP release is activated>
 BEHAVIOR_STRING= f"""
 You are an assistant for creating INI file. You can take this INI file as a template: {REDUCED_EXPLANATION_STRING}
 This is an INI file enriched with information about the key-value pairs which is inside the angled brackets. In square brackets I have the standard units for the values (if applicable).
-A user may now send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message. 
+A user may now send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message. If you
+find in the chat history a previous reply with a full INI file then update values in this file instead of the template INI file. 
 Your reply always includes the full, updated INI file without the extra information in angled or square brackets. A user may enter keys in the German language if so try to find the matching key and replace its value.
 A user may also ask questions about the key-values in the INI file. If you identify a users message as a question about the meaning of a key-value pair in the INI file, try to explain it 
 based on the information provided in the angled brackets after the particular key-value pair. If you find no angled backets after the key-value pairs try to explain based on your world knowledge.
@@ -164,6 +168,8 @@ Answer the question based only on the following context:
 
 Answer the question based on the above context: {question}
 """
+
+print(f"Token count for behavior string = {count_tokens_in_string(BEHAVIOR_STRING)}")
 
 prompt = ChatPromptTemplate.from_messages([
     (  "system",
@@ -189,13 +195,15 @@ def process_query(query, history):
             SystemMessage(content=SYSTEM_STRING1),
             HumanMessage(content=query),
     ]
-    
+     
+
     #response = model_wh.invoke(messages, config=config)
     response = chain_wh.invoke({"messages": HumanMessage(content=query)}, config=config)
-
+    print(response.response_metadata.token_usage.total_tokens)
+    # for msg in messages; msg.content
     sessionHistory = get_session_history('abc2')
-    print(f"This is session history: {sessionHistory}")
-    #print(f"session history: {sessionHistory.messages}")
+    # print(f"This is session history: {sessionHistory}")
+    # print(f"session history: {sessionHistory.messages}")
     # sessionHistory is a list of messages, where the AIMessage is a more
     # complicated entry than the HumanMessage or the SystemMessage
     return response.content

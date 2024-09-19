@@ -2,7 +2,7 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage
 
 class LimitedChatMessageHistory(BaseChatMessageHistory):
-    def __init__(self, max_messages: int = 5):
+    def __init__(self, max_messages: int = 3):
         self._messages: list[BaseMessage] = []
         self.max_messages = max_messages
 
