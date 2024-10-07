@@ -9,7 +9,6 @@ from count_tokens import count_tokens, count_tokens_in_string
 from check_valid_ini import is_valid_ini
 
 load_dotenv()
-print(os.getenv("OPENAI_API_KEY"))
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -285,4 +284,4 @@ with gr.Blocks() as iface:
         undo_btn=None,
         clear_btn=None,
     )
-    iface.launch()
+    iface.launch(share=False, server_name="127.0.0.1", server_port=7860, inline=False)
