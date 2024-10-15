@@ -106,10 +106,10 @@ def process_query(query, history):
 
     sessionHistory = get_session_history('abc2')
  
-    print("================================== Session Hist ==================================")
-    print(f"session history before:")
-    for msg in sessionHistory.messages:
-        msg.pretty_print()
+#    print("================================== Session Hist ==================================")
+#    print(f"session history before:")
+#    for msg in sessionHistory.messages:
+#        msg.pretty_print()
 
     response = chain_wh2.invoke({"messages": HumanMessage(content=query)}, config=config)
 
@@ -124,7 +124,9 @@ def process_query(query, history):
     #print(f"session history after:")
     #for msg in sessionHistory.messages:
     #    msg.pretty_print()
-
+    print(f"Tokens in prompt: {response.response_metadata['token_usage']['prompt_tokens']}, price of prompt: {float(response.response_metadata['token_usage']['prompt_tokens']) * price_per_token}")
+    print(f"Tokens in response: {response.response_metadata['token_usage']['completion_tokens']}, price of response: {float(response.response_metadata['token_usage']['completion_tokens']) * price_per_token}")
+    print(f"Total Price of request: {float(response.response_metadata['token_usage']['total_tokens']) * price_per_token}")
     return response.content
 
 

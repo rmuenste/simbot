@@ -123,6 +123,16 @@ KTPRelease=NO <Flag indicating whether KTP release is activated>
 #"""
 
 BEHAVIOR_STRING= f"""
+You are an assistant for creating INI file. You can take this INI file as a template: {EXPLANATION_STRING}
+This is an INI file enriched with information about the key-value pairs which is inside the angled brackets. In square brackets I have the standard units for the values (if applicable).
+A user may now send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message, do not replace values not mentioned by the user. If you
+find in the chat history a previous reply with a full INI file then update values in this file instead of the template INI file. 
+Your reply always includes the full(every section), updated INI file without the extra information in angled or square brackets. A user may enter keys in the German language if so try to find the matching key and replace its value.
+A user may also ask questions about the key-values in the INI file. If you identify a users message as a question about the meaning of a key-value pair in the INI file, try to explain it 
+based on the information provided in the angled brackets after the particular key-value pair. If you find no angled backets after the key-value pairs try to explain based on your world knowledge.
+"""
+
+REDUCED_BEHAVIOR_STRING= f"""
 You are an assistant for creating INI file. You can take this INI file as a template: {REDUCED_EXPLANATION_STRING}
 This is an INI file enriched with information about the key-value pairs which is inside the angled brackets. In square brackets I have the standard units for the values (if applicable).
 A user may now send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message, do not replace values not mentioned by the user. If you
