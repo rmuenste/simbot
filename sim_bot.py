@@ -1,5 +1,6 @@
 import getpass
 import os
+import sys
 import datetime
 import gradio as gr
 import configparser
@@ -73,12 +74,12 @@ def update_state(ini_string: str) -> str:
     return user_file
 
 price_per_token = 1e-6
-prompt_tokens = count_tokens_in_string(BEHAVIOR_STRING)
+prompt_tokens = count_tokens_in_string(BEHAVIOR_STRING_OM)
 print(f"Token count for behavior string = {prompt_tokens}, approx. cost of prompt = {prompt_tokens * price_per_token}")
 
 prompt = ChatPromptTemplate.from_messages([
     (  "system",
-      BEHAVIOR_STRING 
+      BEHAVIOR_STRING_OM
     ),
     MessagesPlaceholder(variable_name="messages"),
 ])
@@ -140,4 +141,4 @@ with gr.Blocks() as iface:
         undo_btn=None,
         clear_btn=None,
     )
-    iface.launch(share=False, server_name="127.0.0.1", server_port=7860, inline=False)
+    iface.launch(share=False, server_name="127.0.0.1", server_port=7862, inline=False)
