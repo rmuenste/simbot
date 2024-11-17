@@ -13,6 +13,7 @@ from langchain_core.tools import tool
 import datetime
 
 from langchain_core.chat_history import BaseChatMessageHistory
+from limited_cmh import *
 import tiktoken
 
 from langgraph.graph import StateGraph, START, END
@@ -40,6 +41,15 @@ def count_tokens_in_string(msg: str, model: str = "gpt-3.5-turbo") -> None:
     return current_tokens
 
 
+
+store = {}
+
+# Update the get_session_history function
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        # max_messages 3 will keep the last 2 AIMessages
+        store[session_id] = LimitedChatMessageHistory(max_messages=2)
+    return store[session_id]
 
 BEHAVIOR_STRING= f"""
 You are Cleatus from the Simpsons.
