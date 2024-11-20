@@ -74,86 +74,87 @@ BarrelLength=70.0 <Length of the barrel/housing> [mm]
 
 EXPLANATION_STRING =f"""
 [SigmaFileInfo]
-FileType=ToExtrud3D <Internal parameter identifying the file type>
-FileVersion=SIGMA 10.0 <Internal version parameter>
+FileType=undefined <Internal parameter identifying the file type>
+FileVersion=undefined <Internal version parameter>
 Date={date_string_short} <The current date>
-SigmaVersion=SIGMA 12.0.1(4492) <Internal version of SIGMA used>
-ConfigId=XY60_PE_400.xpro-201907020948 <Internal system job ID>
+SigmaVersion=undefined <Internal version of SIGMA used>
+ConfigId=undefined <Internal system job ID, user may refer to this as srid>
 
 [E3DGeometryData]
 [E3DGeometryData/Machine]
-Type=TSE,SSE,DIE <Extruder type>
-Unit=mm <Unit for input parameters>
-Zwickel=straight,curved <Barrel shape; can be straight or curved>
-MachineName=XY 60 <Extruder name>
-RotationDirection=LEFT,RIGHT <Extruder rotation direction: LEFT (default) or RIGHT>
-BarrelDiameter=51.5 <Barrel diameter (default: 2 * screw diameter + 2 * screw clearance)> [mm]
-CenterlineDistance=41.5 <Centerline distance between axes, required for TSE simulations> [mm]
-BarrelStraightCut=0.4 <Depth of the V-cut (default: 2.5 percent of BarrelDiameter, used only for twin screws)> [mm]
-NoOfElements=1 <Number of elements in the extruder>
-NoOfFlights=1 <Number of flights in the extruder>
-BarrelLength=70.0 <Length of the barrel/housing> [mm]
+Type=undefined <Extruder type, possible values: TSE,SSE,DIE >
+Unit=undefined <Unit for input parameters, mm, cm, dm, m, ... etc.>
+Zwickel=undefined <Barrel shape; can be straight or curved>
+MachineName=undefined <Extruder name>
+RotationDirection=undefined <Extruder rotation direction: LEFT (default) or RIGHT>
+BarrelDiameter=undefined <Barrel diameter (default: 2 * screw diameter + 2 * screw clearance)> [mm]
+CenterlineDistance=undefined <Centerline distance between axes, required for TSE simulations> [mm]
+BarrelStraightCut=undefined <Depth of the V-cut (default: 2.5 percent of BarrelDiameter, used only for twin screws), user may refer to this as vcut> [mm]
+NoOfElements=undefined <Number of elements in the extruder>
+NoOfFlights=undefined <Number of flights in the extruder, can use single flight (German: eingängig)>
+BarrelLength=undefined <Length of the barrel/housing> [mm]
 
 [E3DGeometryData/Machine/Element_1]
-GapScrewScrew=0.7 <Clearance between screws in a twin-screw extruder> [mm]
-ObjectType=screw <The object is a screw>
-Unit=mm <Unit for input parameters>
-startposition = 0.0 <Starting position of the screw> [mm]
+GapScrewScrew=undefined <Clearance between screws in a twin-screw extruder, German: Schneckenspiel> [mm]
+ObjectType=undefined <The object is a screw>
+Unit=undefined <Unit for input parameters, mm, cm, dm, m, ... etc.>
+startposition = undefined <Starting position of the screw> [mm]
 off_filelist = screw_extended_by_10.off <File containing the 3D geometry of the screw>
-off_filelistL = screw_+Y_extended_by_10.off <File for the left-hand side of the screw geometry>
+off_filelistL = screw_+Y_extended_by_10.off <File for the left-hand side of the screw geometry, these>
 off_filelistR = screw_-Y_extended_by_10.off <File for the right-hand side of the screw geometry>
-innerdiameter = 30.9 <Inner diameter of the screw> [mm]
-type = OFF,OFF_LR <Type of input geometry; OFF requires `off_filelist`, OFF_LR requires both `off_filelistL` and `off_filelistR`>
+innerdiameter = undefined <Inner diameter of the screw, German: Kerndurchmesser> [mm]
+type = undefined <Type of input geometry; OFF requires `off_filelist`, OFF_LR requires both `off_filelistL` and `off_filelistR`>
 
 [E3DProcessParameters]
-ScrewSpeed=300.0 <Rotational speed of the screw> [rpm]
-ProcessType=THROUGHPUT <Type of process: mass throughput>
-MassThroughput=300.0 <Mass of material processed per hour> [kg/h]
-MaterialTemperature=290.0 <Inflow temperature of the material and starting melt temperature> [C deg]
-BarrelTemperature=280.0 <Barrel temperature (used if not adiabatic)> [C deg]
-ScrewTemperature=_INVALID_ <Screw temperature (used if not adiabatic)> [C deg]
-BarrelTemperatureAdiabatic=YES,NO <If NO, a specific ScrewTemperature must be defined>
-ScrewTemperatureAdiabatic=YES,NO <If NO, a specific BarrelTemperature must be defined>
+ScrewSpeed=undefined <Rotational speed of the screw> [rpm]
+ProcessType=undefined <Type of process: mass throughput, can be: THROUGHPUT>
+MassThroughput=undefined <Mass of material processed per hour> [kg/h]
+MaterialTemperature=undefined <Inflow temperature of the material and starting melt temperature> [C deg]
+BarrelTemperature=undefined <Barrel temperature (used if not adiabatic)> [C deg]
+ScrewTemperature=undefined <Screw temperature (used if not adiabatic)> [C deg]
+BarrelTemperatureAdiabatic=undefined <If NO, a specific ScrewTemperature must be defined, can be YES,NO>
+ScrewTemperatureAdiabatic=undefined <If NO, a specific BarrelTemperature must be defined, can be YES,NO>
 
 [E3DProcessParameters/Material]
-Name=PC1 <Name of the material>
-Type=Polymer <Type of material>
+Name=undefined <Name of the material>
+Type=undefined <Type of material>
 
 [E3DProcessParameters/Material/RheologicalData]
-CalcVisco=Carreau <Viscosity model used for the material>
-CalcTemp=TbTs <Temperature model used for the material>
+CalcVisco=undefined <Viscosity model used for the material, can be: Carreau>
+CalcTemp=undefined <Temperature model used for the material, can be: TbTs>
 
 [E3DProcessParameters/Material/RheologicalData/Carreau]
-ZeroViscosity=397.69 <Viscosity at zero shear rate> [Pa.s]
-RecipVelocity=0.00029 <Reciprocal of the characteristic shear rate velocity> [s]
-Exponent=0.92012 <Exponent in the Carreau viscosity model> [unitless]
+ZeroViscosity=undefined <Viscosity at zero shear rate, a user may refer to as A which comes from the carreau model formula> [Pa.s]
+RecipVelocity=undefined <Reciprocal of the characteristic shear rate velocity, can be called B> [s]
+Exponent=undefined <Exponent in the Carreau viscosity model, can be called C> [unitless]
 
 [E3DProcessParameters/Material/RheologicalData/TBTS]
-standardtemperature = 135.7 <Standard processing temperature> [C deg]
-referencetemperature = 300.0 <Reference temperature for rheological calculations> [C deg]
+standardtemperature = undefined <Standard processing temperature, user may refer to this as T:S or similar> [C deg]
+referencetemperature = undefined <Reference temperature for rheological calculations, user may refer to this as T:B or similar> [C deg]
 
 [E3DProcessParameters/Material/ThermoData]
-heatconductivity = 0.134 <Thermal conductivity of the material> [W/m/K]
-heatconductivityslope = 0.0 <Slope of the thermal conductivity with respect to temperature>
-heatcapacity = 1.75 <Specific heat capacity of the material> [kJ/kg/K]
-heatcapacityslope = 0.0 <Slope of the heat capacity with respect to temperature>
-densitymodel = DENSITY <Density model used for the material>
+heatconductivity = undefined <Thermal conductivity of the material> [W/m/K]
+heatconductivityslope = undefined <Slope of the thermal conductivity with respect to temperature>
+heatcapacity = undefined <Specific heat capacity of the material> [kJ/kg/K]
+heatcapacityslope = undefined <Slope of the heat capacity with respect to temperature>
+densitymodel = undefined <Density model used for the material, can be: DENSITY>
 
 [E3DProcessParameters/Material/ThermoData/Density]
-Density=1.0 <Density of the melt> [g/cm3]
-DensitySlope=0.0 <Slope of the density with respect to temperature>
+Density=undefined <Density of the melt> [g/cm3]
+DensitySlope=undefined <Slope of the density with respect to temperature>
 
 [E3DSimulationsettings]
-MeshQuality=coarse, medium, fine <Mesh resolution>
-HexMesher=TwinScrew / HollowCylinder <Mesh generator type: TwinScrew or HollowCylinder>
-KTPRelease=NO <Flag indicating whether KTP release is activated>
+MeshQuality=undefined <Mesh resolution, can be: coarse, medium, fine >
+HexMesher=undefined <Mesh generator type: TwinScrew or HollowCylinder>
+KTPRelease=undefined <Flag indicating whether KTP release is activated; NO or YES>
 """
 
 BEHAVIOR_STRING= f"""
-You are an assistant for creating INI file. You can take this INI file as a template: {REDUCED_EXPLANATION_STRING}
+You are an assistant for creating INI file. You can take this INI file as a template: {EXPLANATION_STRING}
 This is an INI file enriched with information about the key-value pairs which is inside the angled brackets. In square brackets I have the standard units for the values (if applicable).
-A user may now send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message. If you
-find in the chat history a previous reply with a full INI file then update values in this file instead of the template INI file. 
+The user should either all at once or message by message send values which should be processed by the assistant.
+A user may send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message. If you
+find in the chat history a previous reply with a full INI file then we continue to update values in this file instead of starting from the template INI file. 
 Your reply always includes the full(every section), updated INI file without the extra information in angled or square brackets. A user may enter keys in the German language if so try to find the matching key and replace its value.
 A user may also ask questions about the key-values in the INI file. If you identify a users message as a question about the meaning of a key-value pair in the INI file, try to explain it 
 based on the information provided in the angled brackets after the particular key-value pair. If you find no angled backets after the key-value pairs try to explain based on your world knowledge.
@@ -234,6 +235,17 @@ def filter_messages(state: MyState):
 agent.add_node("sim_bot", simBot)
 agent.add_edge(START, "sim_bot")
 agent.add_edge("sim_bot", END)
+
+
+# Build graph
+#agent = StateGraph(MessagesState)
+#agent.add_node("filter", filter_messages)
+#agent.add_node("sim_bot", simBot)
+#agent.add_edge(START, "filter")
+#agent.add_edge("filter", "sim_bot")
+#agent.add_edge("sim_bot", END)
+#graph = agent.compile()
+#graph = agent.compile(checkpointer=memory)
 #===========================================================================
 # Variant without persistant memory
 #===========================================================================
