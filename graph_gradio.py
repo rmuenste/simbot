@@ -87,7 +87,7 @@ Unit=undefined <Unit for input parameters, mm, cm, dm, m, ... etc.>
 Zwickel=undefined <Barrel shape; can be straight or curved>
 MachineName=undefined <Extruder name>
 RotationDirection=undefined <Extruder rotation direction: LEFT (default) or RIGHT>
-BarrelDiameter=undefined <Barrel diameter (default: 2 * screw diameter + 2 * screw clearance)> [mm]
+BarrelDiameter=undefined <Barrel diameter (default: 2 * screw diameter + 2 * screw clearance), German: Zylinderdurchmesser> [mm]
 CenterlineDistance=undefined <Centerline distance between axes, required for TSE simulations> [mm]
 BarrelStraightCut=undefined <Depth of the V-cut (default: 2.5 percent of BarrelDiameter, used only for twin screws), user may refer to this as vcut> [mm]
 NoOfElements=undefined <Number of elements in the extruder>
@@ -102,16 +102,17 @@ startposition = undefined <Starting position of the screw> [mm]
 off_filelist = screw_extended_by_10.off <File containing the 3D geometry of the screw>
 off_filelistL = screw_+Y_extended_by_10.off <File for the left-hand side of the screw geometry, these>
 off_filelistR = screw_-Y_extended_by_10.off <File for the right-hand side of the screw geometry>
-innerdiameter = undefined <Inner diameter of the screw, German: Kerndurchmesser> [mm]
+innerdiameter = undefined <Inner diameter of the screw, German: Kerndurchmesser, Maximaler Schneckendurchmesser> [mm]
+outerdiameter = undefined <Outer diameter of the screw, German: Minimaler Schneckendurchmesser> [mm]
 type = undefined <Type of input geometry; OFF requires `off_filelist`, OFF_LR requires both `off_filelistL` and `off_filelistR`>
 
 [E3DProcessParameters]
 ScrewSpeed=undefined <Rotational speed of the screw> [rpm]
 ProcessType=undefined <Type of process: mass throughput, can be: THROUGHPUT>
-MassThroughput=undefined <Mass of material processed per hour> [kg/h]
+MassThroughput=undefined <Mass of material processed per hour, German: Durchsatz, Massendurchsatz > [kg/h]
 MaterialTemperature=undefined <Inflow temperature of the material and starting melt temperature> [C deg]
-BarrelTemperature=undefined <Barrel temperature (used if not adiabatic)> [C deg]
-ScrewTemperature=undefined <Screw temperature (used if not adiabatic)> [C deg]
+BarrelTemperature=undefined <Barrel temperature (used if not adiabatic); can be called T_barrel> [C deg]
+ScrewTemperature=undefined <Screw temperature (used if not adiabatic); can be called T_screw> [C deg]
 BarrelTemperatureAdiabatic=undefined <If NO, a specific ScrewTemperature must be defined, can be YES,NO>
 ScrewTemperatureAdiabatic=undefined <If NO, a specific BarrelTemperature must be defined, can be YES,NO>
 
@@ -135,7 +136,7 @@ referencetemperature = undefined <Reference temperature for rheological calculat
 [E3DProcessParameters/Material/ThermoData]
 heatconductivity = undefined <Thermal conductivity of the material> [W/m/K]
 heatconductivityslope = undefined <Slope of the thermal conductivity with respect to temperature>
-heatcapacity = undefined <Specific heat capacity of the material> [kJ/kg/K]
+heatcapacity = undefined <Specific heat capacity of the material, can be cp> [kJ/kg/K]
 heatcapacityslope = undefined <Slope of the heat capacity with respect to temperature>
 densitymodel = undefined <Density model used for the material, can be: DENSITY>
 
@@ -155,7 +156,7 @@ This is an INI file enriched with information about the key-value pairs which is
 The user should either all at once or message by message send values which should be processed by the assistant.
 A user may send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message. If you
 find in the chat history a previous reply with a full INI file then we continue to update values in this file instead of starting from the template INI file. 
-Your reply always includes the full(every section), updated INI file without the extra information in angled or square brackets. A user may enter keys in the German language if so try to find the matching key and replace its value.
+Always reply with the complete, updated INI file, omitting units and the explanatory text in angled and square brackets. If the user provides keys in German, identify the corresponding English keys in the template and update their values.
 A user may also ask questions about the key-values in the INI file. If you identify a users message as a question about the meaning of a key-value pair in the INI file, try to explain it 
 based on the information provided in the angled brackets after the particular key-value pair. If you find no angled backets after the key-value pairs try to explain based on your world knowledge.
 """
@@ -173,6 +174,8 @@ Answer the question based on the above context: {question}
 price_per_token = 1e-6
 prompt_tokens = count_tokens_in_string(BEHAVIOR_STRING)
 print(f"Token count for behavior string = {prompt_tokens}, approx. cost of prompt = {prompt_tokens * price_per_token}")
+
+print(BEHAVIOR_STRING)
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -196,9 +199,6 @@ llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.3)
 
 chain = prompt | llm
 
-memory = MemorySaver()
-
-agent = StateGraph(MyState)
 
 def simBot(state: MyState):
     print(f"This is the message state: {state['messages']}")
@@ -228,24 +228,30 @@ def filter_messages(state: MyState):
         state['messages'].append(AIMessage(content=ini_msg, id=unique_id))
 
     # Delete all but the 2 most recent messages
-    delete_messages = [RemoveMessage(id=m.id) for m in state['messages'][:-2]]
+    delete_messages = [RemoveMessage(id=m.id) for m in state['messages'][:-3]]
     return MyState(messages=delete_messages)
 
+# Get the memory module
+memory = MemorySaver()
+
+# Define the agent
+agent = StateGraph(MyState)
+
 # Build graph
-agent.add_node("sim_bot", simBot)
-agent.add_edge(START, "sim_bot")
-agent.add_edge("sim_bot", END)
+#agent.add_node("sim_bot", simBot)
+#agent.add_edge(START, "sim_bot")
+#agent.add_edge("sim_bot", END)
 
 
 # Build graph
 #agent = StateGraph(MessagesState)
-#agent.add_node("filter", filter_messages)
-#agent.add_node("sim_bot", simBot)
-#agent.add_edge(START, "filter")
-#agent.add_edge("filter", "sim_bot")
-#agent.add_edge("sim_bot", END)
+agent.add_node("filter", filter_messages)
+agent.add_node("sim_bot", simBot)
+agent.add_edge(START, "sim_bot")
+agent.add_edge("sim_bot", "filter")
+agent.add_edge("filter", END)
 #graph = agent.compile()
-#graph = agent.compile(checkpointer=memory)
+graph = agent.compile(checkpointer=memory)
 #===========================================================================
 # Variant without persistant memory
 #===========================================================================
