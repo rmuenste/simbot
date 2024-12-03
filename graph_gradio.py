@@ -92,7 +92,7 @@ CenterlineDistance=undefined <Centerline distance between axes, required for TSE
 BarrelStraightCut=undefined <Depth of the V-cut (default: 2.5 percent of BarrelDiameter, used only for twin screws), user may refer to this as vcut> [mm]
 NoOfElements=undefined <Number of elements in the extruder>
 NoOfFlights=undefined <Number of flights in the extruder, can use single flight (German: eingängig)>
-BarrelLength=undefined <Length of the barrel/housing> [mm]
+BarrelLength=undefined <Length of the barrel/housing, German: Länge, Gehäuselänge or similar> [mm]
 
 [E3DGeometryData/Machine/Element_1]
 GapScrewScrew=undefined <Clearance between screws in a twin-screw extruder, German: Schneckenspiel> [mm]
@@ -156,7 +156,7 @@ This is an INI file enriched with information about the key-value pairs which is
 The user should either all at once or message by message send values which should be processed by the assistant.
 A user may send a message in which he defines one or more key value pairs. Your task is to find and replace the values in the template by the value(s) given in user's message. If you
 find in the chat history a previous reply with a full INI file then we continue to update values in this file instead of starting from the template INI file. 
-Always reply with the complete, updated INI file, omitting units and the explanatory text in angled and square brackets. If the user provides keys in German, identify the corresponding English keys in the template and update their values.
+Always reply with the complete (all sections), updated INI file, omitting units and the explanatory text in angled and square brackets. If the user provides keys in German, identify the corresponding English keys in the template and update their values.
 A user may also ask questions about the key-values in the INI file. If you identify a users message as a question about the meaning of a key-value pair in the INI file, try to explain it 
 based on the information provided in the angled brackets after the particular key-value pair. If you find no angled backets after the key-value pairs try to explain based on your world knowledge.
 """
@@ -268,8 +268,18 @@ config = {"configurable": {"thread_id": "1"}}
 def process_query(query, history):
 
     global user_file
+    human = "================================ Human Message =================================\n"
+    ai = "================================== Ai Message ==================================\n"
     example = "Zwickel = straight BarrelDiameter = 65 BarrelLength = 71 Type=SSE RotationDirection=LEFT"
     messages = [HumanMessage(content=query)]
+    with open("log.txt", "a") as f:
+        f.write(human)
+        f.write(messages[0].content + "\n")
+
+
+
+#for m in messages['messages']:
+#    m.pretty_print()
 
     #===========================================================================
     # Variant without persistant memory
@@ -281,6 +291,9 @@ def process_query(query, history):
     #===========================================================================
     nextState = graph.invoke({"messages": messages, "ini_string": "Bullshit"}, config)
     reply = nextState['messages'][-1].content
+    with open("log.txt", "a") as f:
+        f.write(ai)
+        f.write(reply + "\n")
 
     return reply
 
