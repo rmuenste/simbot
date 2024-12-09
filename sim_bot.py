@@ -1,5 +1,6 @@
 import getpass
 import os
+import sys
 import datetime
 import gradio as gr
 import configparser
@@ -49,15 +50,6 @@ def get_current_state() -> str:
     print("We get the current state")
     return user_file
 
-@tool
-def update_state(ini_string: str) -> str:
-    """This tool should be called when a new INI response is generated."""
-    user_file = ini_string
-    print(f"update state tool called, input: {ini_string}")
-    return user_file
-
-
-
 store = {}
 
 # Update the get_session_history function
@@ -67,15 +59,27 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
         store[session_id] = LimitedChatMessageHistory(max_messages=2)
     return store[session_id]
 
-#======================================================================================================================
+#def get_session_history(session_id: str) -> BaseChatMessageHistory:
+#    if session_id not in store:
+#        store[session_id] = InMemoryChatMessageHistory()
+#    return store[session_id]
+
+
+@tool
+def update_state(ini_string: str) -> str:
+    """This tool should be called when a new INI response is generated."""
+    global user_file
+    user_file = ini_string
+    print(f"update state tool called, input: {ini_string}")
+    return user_file
 
 price_per_token = 1e-6
-prompt_tokens = count_tokens_in_string(BEHAVIOR_STRING)
+prompt_tokens = count_tokens_in_string(BEHAVIOR_STRING_OM)
 print(f"Token count for behavior string = {prompt_tokens}, approx. cost of prompt = {prompt_tokens * price_per_token}")
 
 prompt = ChatPromptTemplate.from_messages([
     (  "system",
-      BEHAVIOR_STRING 
+      BEHAVIOR_STRING_OM
     ),
     MessagesPlaceholder(variable_name="messages"),
 ])
@@ -88,54 +92,46 @@ tools = [update_state]
 # model="gpt-4"
 model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.3)
 
-model.bind_tools(tools)
+model_with_tools = model.bind_tools(tools)
 
-chain = prompt | model
+chain = prompt | model_with_tools
+
+chain2 = prompt | model
 
 chain_wh = RunnableWithMessageHistory(chain, get_session_history)
+chain_wh2 = RunnableWithMessageHistory(chain2, get_session_history)
 
 config = {"configurable": {"session_id": "abc2"}}
 
 def process_query(query, history):
-    print(f"This is history: {history}")
 
-    messages = [
-            SystemMessage(content=SYSTEM_STRING3),
-            HumanMessage(content=query),
-    ]
+    global user_file
 
-    response = chain_wh.invoke({"messages": HumanMessage(content=query)}, config=config)
+    sessionHistory = get_session_history('abc2')
+ 
+#    print("================================== Session Hist ==================================")
+#    print(f"session history before:")
+#    for msg in sessionHistory.messages:
+#        msg.pretty_print()
 
+    response = chain_wh2.invoke({"messages": HumanMessage(content=query)}, config=config)
+
+    # If we have a valid INI file save it in the state
     if is_valid_ini(response.content):
-        print("We have a new state")
-    else:
-        print("This is not an ini file response")
-
-    print(f" {response.response_metadata['token_usage']['prompt_tokens']}")
+        user_file = response.content
 
     # sessionHistory is a list of messages, where the AIMessage is a more
     # complicated entry than the HumanMessage or the SystemMessage
-    sessionHistory = get_session_history('abc2')
-
-    print(f"session history: {sessionHistory.messages}")
-
+    #sessionHistory = get_session_history('abc2')
+    #print("================================== Session Hist ==================================")
+    #print(f"session history after:")
+    #for msg in sessionHistory.messages:
+    #    msg.pretty_print()
+    print(f"Tokens in prompt: {response.response_metadata['token_usage']['prompt_tokens']}, price of prompt: {float(response.response_metadata['token_usage']['prompt_tokens']) * price_per_token}")
+    print(f"Tokens in response: {response.response_metadata['token_usage']['completion_tokens']}, price of response: {float(response.response_metadata['token_usage']['completion_tokens']) * price_per_token}")
+    print(f"Total Price of request: {float(response.response_metadata['token_usage']['total_tokens']) * price_per_token}")
     return response.content
 
-""" Gradio Setup
-The gr.Blocks() object:
-This is the main container for your entire Gradio application. It represents the overall structure of your interface.
-
-- The with gr.Blocks() as iface: syntax:
-  This is using Python's context manager feature. It creates a new scope where all the Gradio components you define 
-  are automatically added to the Blocks object 
--Hierarchical structure:
-  Within a Blocks context, you can nest other blocks (like gr.Row(), gr.Column(), etc.) to create more complex layouts. This allows for a hierarchical structure in your UI.
--Flexibility:
-  Using Blocks gives you more control over the layout and interaction between components. You can add custom CSS, JavaScript, and create more advanced event handlers.
--Automatic launch:
-  When you use the with statement, the launch() method is called on the Blocks object (iface in your case) rather than on individual components.
-
-"""
 with gr.Blocks() as iface:
     chatbot = gr.ChatInterface(
         fn=process_query,
@@ -146,22 +142,4 @@ with gr.Blocks() as iface:
         undo_btn=None,
         clear_btn=None,
     )
-iface.launch(share=False, server_name="127.0.0.1", server_port=7860, inline=False)
-
-""" Alternative Syntax without Blocks
-
-# Create the chat interface
-chatbot = gr.ChatInterface(
-    fn=process_query,
-    title="Simulation Creation Assistant",
-    description="A helpful assistant for creating INI files",
-    chatbot=gr.Chatbot(height=600),
-    retry_btn=None,
-    undo_btn=None,
-    clear_btn=None,
-)
-
-# Launch the interface
-chatbot.launch(share=False, server_name="127.0.0.1", server_port=7860, inline=False)
-
-"""
+    iface.launch(share=False, server_name="127.0.0.1", server_port=7862, inline=False)
