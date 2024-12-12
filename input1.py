@@ -43,10 +43,12 @@ Kerndurchmesser:
 30,9 mm
 Schneckendurchmesser:
 50,7 mm
-Schneckenspiel,GapScrewScrew:
+Schneckenspiel:
 0,72 mm
 
-screw_-Y_extended_by_10.off,screw_+Y_extended_by_10.off & type=OFF_LR
+  type=OFF_LR
+off_filelistL =  screw_-Y_extended_by_10.off,
+off_filelistR screw_+Y_extended_by_10.off
 
 vcut :: 0.38mm
 srid :: 11115

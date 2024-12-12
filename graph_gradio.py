@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import datetime
 import gradio as gr
 import configparser
@@ -8,6 +9,8 @@ from dotenv import load_dotenv
 from count_tokens import count_tokens, count_tokens_in_string
 from check_valid_ini import is_valid_ini
 import uuid
+from search_replace import apply_translations
+from example_ini import EXAMPLE_INI
 
 
 from langchain_openai import ChatOpenAI
@@ -16,7 +19,9 @@ from langchain_core.chat_history import BaseChatMessageHistory, InMemoryChatMess
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from limited_cmh import LimitedChatMessageHistory
-from langchain_core.tools import tool
+from langchain_core.tools import tool, StructuredTool
+from pydantic import BaseModel, Field
+from typing import List, Dict
 from prompts import *
 
 load_dotenv()
@@ -99,12 +104,12 @@ GapScrewScrew=undefined <Clearance between screws in a twin-screw extruder, Germ
 ObjectType=undefined <The object is a screw>
 Unit=undefined <Unit for input parameters, mm, cm, dm, m, ... etc.>
 startposition = undefined <Starting position of the screw> [mm]
-off_filelist = screw_extended_by_10.off <File containing the 3D geometry of the screw>
-off_filelistL = screw_+Y_extended_by_10.off <File for the left-hand side of the screw geometry, these>
-off_filelistR = screw_-Y_extended_by_10.off <File for the right-hand side of the screw geometry>
+type = undefined <Type of input geometry; if set to OFF then *.off values are assigned to off_filelist if OFF_LR is set values are assigned to off_filelistL and off_filelistR>
+off_filelist = undefined <File containing the 3D geometry of the screw, this key-value is used if type=OFF in this section>
+off_filelistL = undefined <File for the left-hand side of the screw geometry, this key-value is used if type=OFF_LR in this section>
+off_filelistR = undefined <File for the right-hand side of the screw geometry, this key-value is used if type=OFF_LR in this section>
 innerdiameter = undefined <Inner diameter of the screw, German: Kerndurchmesser, Maximaler Schneckendurchmesser> [mm]
 outerdiameter = undefined <Outer diameter of the screw, German: Minimaler Schneckendurchmesser> [mm]
-type = undefined <Type of input geometry; OFF requires `off_filelist`, OFF_LR requires both `off_filelistL` and `off_filelistR`>
 
 [E3DProcessParameters]
 ScrewSpeed=undefined <Rotational speed of the screw> [rpm]
@@ -175,7 +180,16 @@ price_per_token = 1e-6
 prompt_tokens = count_tokens_in_string(BEHAVIOR_STRING)
 print(f"Token count for behavior string = {prompt_tokens}, approx. cost of prompt = {prompt_tokens * price_per_token}")
 
-print(BEHAVIOR_STRING)
+#===========================================================================
+# TOOLS 
+#===========================================================================
+with open("translation_dict.json", "r", encoding="utf-8") as f:
+    my_dict = json.load(f)
+
+#========================================================================
+
+
+#===========================================================================
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -199,9 +213,68 @@ llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.3)
 
 chain = prompt | llm
 
+ANALYZER_SYSTEM= f"""
+You are part in a chain of LLM calls for a system that generates INI files which describe CFD simulations. Your input will be a list (one or more elements) of
+key-value pairs. The only rule is that to the left side of the key-value separator sign is the key and to the right the value with arbitrary use of whitespaces, tabs etc.
+Your task is to filter out the key value pairs and to transform it to structured output in the form:
+key1 = value1 \n
+key2 = value2 \n
+...
+key_last = value_last \n
+"""
+
+
+analyzer_prompt = ChatPromptTemplate.from_messages([
+    (  "system",
+    ANALYZER_SYSTEM 
+    ),
+    MessagesPlaceholder(variable_name="messages"),
+])
+
+analyzer_chain = analyzer_prompt | llm
+
+#===========================================================================
+# Node functions
+#===========================================================================
+def translate_tool(state: MyState):
+
+    query = state["messages"][-1].content
+    updated_query = apply_translations(query, my_dict)
+    state["messages"][-1].content = updated_query
+    return state
+
+def simple_check(state: MyState):
+
+    aiMessage = state['messages']
+    ini_file = state["ini_string"]
+    config = configparser.ConfigParser()
+    config.optionxform = str # preserve the case
+
+    ini_stream = StringIO(ini_file)
+    config_string = state["ini_string"]
+    
+    try:
+        config.read_file(ini_stream)
+        # If no sections are parsed, it's not valid
+        if len(config.sections()) == 0:
+            return state
+    except (configparser.MissingSectionHeaderError, configparser.ParsingError):
+        return state
+
+    
+    # Rule 1.
+    if config['E3DGeometryData/Machine/Element_1']['type'] == "OFF_LR":
+      config['E3DGeometryData/Machine/Element_1']['off_filelist'] = "undefined"
+      output = StringIO()
+      config.write(output)
+      config_string = output.getvalue()
+      output.close()
+      state['messages'][-1].content = config_string
+
+    return MyState(ini_string=config_string, messages=state["messages"])
 
 def simBot(state: MyState):
-    print(f"This is the message state: {state['messages']}")
+    #print(f"This is the message state: {state['messages']}")
     response = {"messages": [chain.invoke(state["messages"])]}
     aiMessage = response['messages']
     
@@ -231,36 +304,74 @@ def filter_messages(state: MyState):
     delete_messages = [RemoveMessage(id=m.id) for m in state['messages'][:-3]]
     return MyState(messages=delete_messages)
 
+def output(state: MyState):
+    """ Output processing node """
+    #for m in state['messages']:
+    #    m.pretty_print()
+    return state
+
+#===========================================================================
+
+
+#===========================================================================
+# Variant without persistant memory
+#===========================================================================
+# Build simple graph
+#agent.add_node("sim_bot", simBot)
+#agent.add_edge(START, "sim_bot")
+#agent.add_edge("sim_bot", END)
+#agent = StateGraph(MessagesState)
+#graph = agent.compile()
+
+#===========================================================================
+# Variant with persistant memory where the state is saved
+#===========================================================================
 # Get the memory module
 memory = MemorySaver()
 
 # Define the agent
 agent = StateGraph(MyState)
 
-# Build graph
-#agent.add_node("sim_bot", simBot)
-#agent.add_edge(START, "sim_bot")
-#agent.add_edge("sim_bot", END)
-
-
-# Build graph
-#agent = StateGraph(MessagesState)
+# Build graph with filtering
+agent.add_node("translate_tool", translate_tool)
 agent.add_node("filter", filter_messages)
 agent.add_node("sim_bot", simBot)
-agent.add_edge(START, "sim_bot")
-agent.add_edge("sim_bot", "filter")
+agent.add_node("sim_check", simple_check)
+
+# Graph connectivity
+agent.add_edge(START, "translate_tool")
+agent.add_edge("translate_tool", "sim_bot")
+
+agent.add_edge("sim_bot", "sim_check")
+agent.add_edge("sim_check", "filter")
 agent.add_edge("filter", END)
-#graph = agent.compile()
+
 graph = agent.compile(checkpointer=memory)
 #===========================================================================
-# Variant without persistant memory
-#===========================================================================
-#graph = agent.compile()
+
 
 #===========================================================================
-# Variant with persistant memory where the state is saved
+# Version with translation node
 #===========================================================================
-graph = agent.compile(checkpointer=memory)
+# Get the memory module
+#memory = MemorySaver()
+#
+## Define the agent
+#agent = StateGraph(MyState)
+#
+## Build graph with filtering
+#agent.add_node("translate_tool", translate_tool)
+#agent.add_node("output", output)
+#
+#
+## Graph connectivity
+#agent.add_edge(START, "translate_tool")
+#agent.add_edge("translate_tool", "output")
+#agent.add_edge("output", END)
+##agent.add_edge("filter", END)
+#
+#graph = agent.compile(checkpointer=memory)
+#===========================================================================
 
 # Specify a thread
 config = {"configurable": {"thread_id": "1"}}
@@ -275,8 +386,6 @@ def process_query(query, history):
     with open("log.txt", "a") as f:
         f.write(human)
         f.write(messages[0].content + "\n")
-
-
 
 #for m in messages['messages']:
 #    m.pretty_print()
