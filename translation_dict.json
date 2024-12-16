@@ -2,8 +2,8 @@
     "zylinderdurchmesser": "BarrelDiameter",
     "schneckenspiel": "GapScrewScrew",
     "kerndurchmesser": "innerdiameter",
-    "maximaler schneckendurchmesser": "innerdiameter",
-    "minimaler schneckendurchmesser": "outerdiameter",
+    "maximaler schneckendurchmesser": "outerdiameter",
+    "minimaler schneckendurchmesser": "innerdiameter",
     "durchsatz": "MassThroughput",
     "achsabstand": "CenterlineDistance",
     "massendurchsatz": "MassThroughput"
