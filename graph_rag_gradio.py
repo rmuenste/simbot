@@ -81,13 +81,10 @@ llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.3)
 chain = prompt | llm
 
 ANALYZER_SYSTEM= f"""
-You are part in a chain of LLM calls for a system that generates INI files which describe CFD simulations. Your input will be a list (one or more elements) of
-key-value pairs. The only rule is that to the left side of the key-value separator sign is the key and to the right the value with arbitrary use of whitespaces, tabs etc.
-Your task is to filter out the key value pairs and to transform it to structured output in the form:
-key1 = value1 \n
-key2 = value2 \n
-...
-key_last = value_last \n
+You are part in a chain of LLM calls for a system that generates INI files which describe CFD simulations. Your input will be a user request. The
+user can make a request where he enters one or more key-value pairs of the ini file or he can ask questions about the values in the ini file. 
+Your task is to analyze the user request: if you think it is a question about values in the INI file then reply 'QUESTION' if think the request consists of
+key-value pairs of the INI file then reply 'FILE_GENERATION'. 
 """
 
 
@@ -98,7 +95,12 @@ analyzer_prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="messages"),
 ])
 
-analyzer_chain = analyzer_prompt | llm
+OPENAI_MODEL_4oMini = "gpt-4o-mini"
+OPENAI_MODEL_3_5_turbo="gpt-3.5-turbo"
+
+analyzer_llm = ChatOpenAI(model=OPENAI_MODEL_4oMini, temperature=0.1)
+
+analyzer_chain = analyzer_prompt | analyzer_llm
 
 #===========================================================================
 # Node functions
@@ -106,10 +108,17 @@ analyzer_chain = analyzer_prompt | llm
 
 #===========================================================================
 def request_router(state: MyState):
-    if random.random() > 0.5:
-      return "QUESTION"
+
+    question = state["messages"][-1].content
+
+    response = analyzer_chain.invoke(state['messages'])
+
+    if response == "FILE_GENERATION":
+      return "translate_tool"
+    elif response == "QUESTION" :
+      return "question_bot"
     else:
-      return "INI"
+      return "translate_tool"
 #===========================================================================
 # Translate tool node:
 # The node performs a deterministic search and replace operation that
@@ -207,6 +216,19 @@ def output(state: MyState):
     return state
 
 #===========================================================================
+# Analyzer node:
+#===========================================================================
+def question_bot(state: MyState):
+    print("I do rag")
+
+    question = state["messages"][-1].content
+    #messages = [HumanMessage(content=question)]
+
+    response = analyzer_chain.invoke(question)
+    return MyState(messages=response["messages"])
+
+
+#===========================================================================
 
 
 #===========================================================================
@@ -232,14 +254,21 @@ agent = StateGraph(MyState)
 agent.add_node("translate_tool", translate_tool)
 agent.add_node("filter", filter_messages)
 agent.add_node("sim_bot", simBot)
+agent.add_node("question_bot", question_bot)
 agent.add_node("sim_check", simple_check)
 
+agent.add_node("request_router", request_router)
+
 # Graph connectivity
-agent.add_edge(START, "translate_tool")
+agent.add_conditional_edges(START, request_router)
+
+
+#agent.add_edge(START, "translate_tool")
 agent.add_edge("translate_tool", "sim_bot")
 
 agent.add_edge("sim_bot", "sim_check")
 agent.add_edge("sim_check", "filter")
+agent.add_edge("question_bot", "filter")
 agent.add_edge("filter", END)
 
 graph = agent.compile(checkpointer=memory)
