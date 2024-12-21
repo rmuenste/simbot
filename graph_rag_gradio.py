@@ -105,7 +105,8 @@ analyzer_chain = analyzer_prompt | analyzer_llm
 #===========================================================================
 # Node functions
 #===========================================================================
-
+#ich erwarte von dir die lösung
+# du sitzt unten und ich kann mein Wasser nicht öffnen
 #===========================================================================
 def request_router(state: MyState):
 
